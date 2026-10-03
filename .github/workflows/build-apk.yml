@@ -55,4 +55,4 @@ jobs:
         with:
           name: eman-bazar-apk
           path: project/build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
+          if-no-files-found: error.
