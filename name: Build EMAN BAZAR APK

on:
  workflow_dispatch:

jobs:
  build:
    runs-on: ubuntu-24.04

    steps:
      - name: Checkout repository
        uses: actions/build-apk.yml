@@ -1,0 +1,74 @@
+
+name: Build EMAN BAZAR APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check ZIP file
+        run: |
+          if [ ! -f eman_bazar_v0.7_full_project.zip ]; then
+            echo "ERROR: ZIP file is missing from the GitHub repository root."
+            exit 1
+          fi
+
+      - name: Extract EMAN BAZAR project
+        run: |
+          mkdir -p project
+          unzip -q eman_bazar_v0.7_full_project.zip -d project
+
+      - name: Locate Flutter project
+        run: |
+          find project -name pubspec.yaml -print
+          FILE=$(find project -name pubspec.yaml -print -quit)
+          if [ -z "$FILE" ]; then
+            echo "ERROR: pubspec.yaml not found inside ZIP."
+            exit 1
+          fi
+          echo "PROJECT_DIR=$(dirname "$FILE")" >> "$GITHUB_ENV"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Prepare Android Gradle
+        run: |
+          cd "$PROJECT_DIR"
+          sed -i 's/com.android.application" version "8.6.1"/com.android.application" version "8.11.1"/' android/settings.gradle
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          sed -i 's#^distributionUrl=.*#distributionUrl=https\\://services.gradle.org/distributions/gradle-8.13-bin.zip#' android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Get packages
+        run: |
+          cd "$PROJECT_DIR"
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd "$PROJECT_DIR"
+          flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: eman-bazar-apk
+          path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
