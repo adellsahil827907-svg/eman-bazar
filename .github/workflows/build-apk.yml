@@ -36,8 +36,9 @@ jobs:
         run: |
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          sed -i 's/id "com.android.application" version "8.6.1"/id "com.android.application" version "9.1.1"/' android/settings.gradle
           cd android
-          gradle wrapper --gradle-version 8.13
+          gradle wrapper --gradle-version 9.3.1
           cd ..
 
       - name: Get packages
